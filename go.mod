@@ -1,4 +1,4 @@
-module github.com/traefik/pluginproviderdemo
+module pcprovider
 
 go 1.19
 

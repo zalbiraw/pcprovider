@@ -2,9 +2,15 @@ displayName: Provider Plugin Demo
 type: provider
 iconPath: .assets/icon.png
 
-import: github.com/traefik/pluginproviderdemo
+import: pcprovider
 
-summary: '[Demo] Simple Provider Plugin'
+summary: 'Provider plugin that discovers Nutanix PC VMs and creates services grouped by category values.'
 
 testData:
-  pollInterval: 5s
+  pollInterval: 30s
+  pcUrl: https://pc.example.com
+  username: admin
+  password: secret
+  bearerToken: ""
+  insecureSkipVerify: false
+  categoryKey: traefikServiceName
