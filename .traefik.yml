@@ -2,7 +2,7 @@ displayName: Provider Plugin Demo
 type: provider
 iconPath: .assets/icon.png
 
-import: pcprovider
+import: github.com/zalbiraw/pcprovider
 
 summary: 'Provider plugin that discovers Nutanix PC VMs and creates services grouped by category values.'
 
