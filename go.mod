@@ -1,4 +1,4 @@
-module pcprovider
+module github.com/zalbiraw/pcprovider
 
 go 1.19
 
