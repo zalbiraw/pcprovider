@@ -45,6 +45,64 @@ type Config struct {
 	// Services will be created per category value, e.g. "<key>-<value>".
 	// Default: "TraefikServiceName".
 	CategoryKey string `json:"categoryKey,omitempty"`
+
+	// VPCName, if set, is intended to filter discovered VMs to only those
+	// attached to a VPC whose name matches this value (case-insensitive).
+	// Currently unused; placeholder for future implementation.
+	VPCName string `json:"vpcName,omitempty"`
+}
+
+// lookupVPCExtIDByName returns the VPC extId for the given name using v4.1 config API.
+func (p *Provider) lookupVPCExtIDByName(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", nil
+	}
+	path := "/api/networking/v4.1/config/vpcs"
+	q := map[string]string{
+		"$filter": fmt.Sprintf("name eq '%s'", name),
+		"$select": "extId",
+	}
+	payload, _, err := p.fetchGET(path, q)
+	if err != nil {
+		return "", err
+	}
+	items := extractArray(payload, "data")
+	for _, it := range items {
+		if m, ok := it.(map[string]any); ok {
+			if ext, _ := m["extId"].(string); strings.TrimSpace(ext) != "" {
+				return ext, nil
+			}
+		}
+	}
+	return "", nil
+}
+
+// fetchSubnetIDsByVPCRef returns a set of subnet extIds for a VPC extId using v4.1 config API.
+func (p *Provider) fetchSubnetIDsByVPCRef(vpcExtId string) (map[string]struct{}, error) {
+	vpcExtId = strings.TrimSpace(vpcExtId)
+	if vpcExtId == "" {
+		return map[string]struct{}{}, nil
+	}
+	path := "/api/networking/v4.1/config/subnets"
+	q := map[string]string{
+		"$filter": fmt.Sprintf("vpcReference eq '%s'", vpcExtId),
+		"$select": "extId",
+	}
+	payload, _, err := p.fetchGET(path, q)
+	if err != nil {
+		return nil, err
+	}
+	items := extractArray(payload, "data")
+	out := make(map[string]struct{}, len(items))
+	for _, it := range items {
+		if m, ok := it.(map[string]any); ok {
+			if ext, _ := m["extId"].(string); strings.TrimSpace(ext) != "" {
+				out[ext] = struct{}{}
+			}
+		}
+	}
+	return out, nil
 }
 
 // CategoryInfo represents a Prism Central category with key/value and extId.
@@ -206,6 +264,9 @@ type Provider struct {
 	password    string
 	categoryKey string
 
+	// vpcName is a placeholder for future VPC-based filtering.
+	vpcName string
+
 	cancel func()
 }
 
@@ -256,6 +317,7 @@ func New(ctx context.Context, config *Config, name string) (*Provider, error) {
 		username:     username,
 		password:     password,
 		categoryKey:  catKey,
+		vpcName:      strings.TrimSpace(config.VPCName),
 	}, nil
 }
 
@@ -381,6 +443,8 @@ func (p *Provider) fetchServiceGroups(key string) (map[string][]serverTarget, er
 			vms = append(vms, m)
 		}
 	}
+
+	vms = p.filterByVPCName(vms, p.vpcName)
 
 	all := groupByCategories(vms, []string{p.categoryKey}, catIndex)
 	// Ensure we always return a non-nil map for the requested key.
@@ -555,3 +619,68 @@ func firstNonEmpty(vals ...string) string {
 
 // boolPtr returns a pointer to the provided bool value.
 func boolPtr(b bool) *bool { return &b }
+
+// filterByVPCName filters VMs by desired VPC name via subnet membership.
+func (p *Provider) filterByVPCName(vms []map[string]any, vpcName string) []map[string]any {
+	want := strings.TrimSpace(vpcName)
+	if want == "" {
+		return vms
+	}
+	vpcID, err := p.lookupVPCExtIDByName(want)
+	if err != nil || vpcID == "" {
+		return vms
+	}
+	allow, err := p.fetchSubnetIDsByVPCRef(vpcID)
+	if err != nil {
+		return vms
+	}
+	if len(allow) == 0 {
+		return nil
+	}
+	var out []map[string]any
+	for _, vm := range vms {
+		if p.vmHasSubnet(vm, allow) {
+			out = append(out, vm)
+		}
+	}
+	return out
+}
+
+// vmHasSubnet checks if a VM references any subnet in the allow set via NIC fields.
+func (p *Provider) vmHasSubnet(vm map[string]any, allow map[string]struct{}) bool {
+	nicsAny, ok := vm["nics"].([]any)
+	if !ok || len(nicsAny) == 0 {
+		return false
+	}
+	matched := false
+	var seen []string
+	for _, n := range nicsAny {
+		nic, ok := n.(map[string]any)
+		if !ok {
+			continue
+		}
+		// Check common NIC network info containers.
+		for _, netKey := range []string{"nicNetworkInfo", "networkInfo"} {
+			if netInfo, ok := nic[netKey].(map[string]any); ok {
+				if subnetRef, ok := netInfo["subnet"].(map[string]any); ok {
+					if id, _ := subnetRef["extId"].(string); id != "" {
+						seen = append(seen, id)
+						if _, ok := allow[id]; ok {
+							matched = true
+						}
+					}
+				}
+			}
+		}
+		// Occasionally subnet may be top-level under NIC
+		if subnetRef, ok := nic["subnet"].(map[string]any); ok {
+			if id, _ := subnetRef["extId"].(string); id != "" {
+				seen = append(seen, id)
+				if _, ok := allow[id]; ok {
+					matched = true
+				}
+			}
+		}
+	}
+	return matched
+}

@@ -12,7 +12,7 @@ import (
 	"os"
 	"strings"
 
-	"pcprovider"
+	"github.com/zalbiraw/pcprovider"
 )
 
 func main() {
@@ -25,6 +25,7 @@ func main() {
 		token = flag.String("token", envOr("PC_BEARER_TOKEN", ""), "Prism Central bearer token (or PC_BEARER_TOKEN)")
 		insec = flag.Bool("insecure-skip-verify", envBool("INSECURE_SKIP_VERIFY"), "skip TLS verification (or INSECURE_SKIP_VERIFY)")
 		key   = flag.String("category-key", envOr("CATEGORY_KEY", "TraefikServiceName"), "category key to group by (or CATEGORY_KEY)")
+		vpc   = flag.String("vpc-name", envOr("VPC_NAME", ""), "filter VMs by VPC name (or VPC_NAME)")
 	)
 	flag.Parse()
 
@@ -35,6 +36,7 @@ func main() {
 	cfg.BearerToken = *token
 	cfg.InsecureSkipVerify = *insec
 	cfg.CategoryKey = firstNonEmpty(*key, cfg.CategoryKey)
+	cfg.VPCName = strings.TrimSpace(*vpc)
 
 	p, err := pcprovider.New(context.Background(), cfg, *name)
 	if err != nil {
