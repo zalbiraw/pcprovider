@@ -46,7 +46,7 @@ func TestCollectIPs(t *testing.T) {
 func TestGroupByCategories(t *testing.T) {
 	// Build a fake category index as returned by /api/prism/v4.1/config/categories
 	catIndex := map[string]CategoryInfo{
-		"ext-foo":   {ExtID: "ext-foo", Key: "traefikServiceName", Value: "foo"},
+		"ext-foo":   {ExtID: "ext-foo", Key: "TraefikServiceName", Value: "foo"},
 		"ext-other": {ExtID: "ext-other", Key: "other", Value: "bar"},
 	}
 
@@ -71,9 +71,9 @@ func TestGroupByCategories(t *testing.T) {
 		},
 	}
 
-	groups := groupByCategories(vms, []string{"traefikServiceName", "other"}, catIndex)
-	if got := groups["traefikServiceName"]["foo"]; !reflect.DeepEqual(got, []serverTarget{{IP: "10.0.0.1"}, {IP: "10.0.0.2"}}) {
-		t.Fatalf("grouping mismatch for traefikServiceName=foo: %#v", got)
+	groups := groupByCategories(vms, []string{"TraefikServiceName", "other"}, catIndex)
+	if got := groups["TraefikServiceName"]["foo"]; !reflect.DeepEqual(got, []serverTarget{{IP: "10.0.0.1"}, {IP: "10.0.0.2"}}) {
+		t.Fatalf("grouping mismatch for TraefikServiceName=foo: %#v", got)
 	}
 	if got := groups["other"]["bar"]; !reflect.DeepEqual(got, []serverTarget{{IP: "10.0.0.3"}}) {
 		t.Fatalf("grouping mismatch for other=bar: %#v", got)

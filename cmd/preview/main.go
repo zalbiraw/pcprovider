@@ -24,7 +24,7 @@ func main() {
 		pass  = flag.String("password", envOr("PC_PASSWORD", ""), "Prism Central password (or PC_PASSWORD)")
 		token = flag.String("token", envOr("PC_BEARER_TOKEN", ""), "Prism Central bearer token (or PC_BEARER_TOKEN)")
 		insec = flag.Bool("insecure-skip-verify", envBool("INSECURE_SKIP_VERIFY"), "skip TLS verification (or INSECURE_SKIP_VERIFY)")
-		key   = flag.String("category-key", envOr("CATEGORY_KEY", "traefikServiceName"), "category key to group by (or CATEGORY_KEY)")
+		key   = flag.String("category-key", envOr("CATEGORY_KEY", "TraefikServiceName"), "category key to group by (or CATEGORY_KEY)")
 	)
 	flag.Parse()
 

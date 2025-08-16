@@ -1,6 +1,6 @@
 // Package pcprovider provides a Traefik provider that discovers VMs from
 // Nutanix Prism Central and builds HTTP services grouped by a category
-// key (default: "traefikServiceName").
+// key (default: "TraefikServiceName").
 package pcprovider
 
 import (
@@ -43,7 +43,7 @@ type Config struct {
 
 	// CategoryKey is the category key to group services by.
 	// Services will be created per category value, e.g. "<key>-<value>".
-	// Default: "traefikServiceName".
+	// Default: "TraefikServiceName".
 	CategoryKey string `json:"categoryKey,omitempty"`
 }
 
@@ -189,7 +189,7 @@ func appendServerUnique(base []serverTarget, more ...serverTarget) []serverTarge
 func CreateConfig() *Config {
 	return &Config{
 		PollInterval:       "30s",
-		CategoryKey:        "traefikServiceName",
+		CategoryKey:        "TraefikServiceName",
 		InsecureSkipVerify: false,
 	}
 }
@@ -244,7 +244,7 @@ func New(ctx context.Context, config *Config, name string) (*Provider, error) {
 	// Default category key if not provided
 	catKey := strings.TrimSpace(config.CategoryKey)
 	if catKey == "" {
-		catKey = "traefikServiceName"
+		catKey = "TraefikServiceName"
 	}
 
 	return &Provider{

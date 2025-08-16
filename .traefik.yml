@@ -13,4 +13,4 @@ testData:
   password: secret
   bearerToken: ""
   insecureSkipVerify: false
-  categoryKey: traefikServiceName
+  categoryKey: TraefikServiceName
