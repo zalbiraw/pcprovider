@@ -628,15 +628,13 @@ func (p *Provider) filterByVPCName(vms []map[string]any, vpcName string) []map[s
 	}
 	vpcID, err := p.lookupVPCExtIDByName(want)
 	if err != nil || vpcID == "" {
-		return vms
-	}
-	allow, err := p.fetchSubnetIDsByVPCRef(vpcID)
-	if err != nil {
-		return vms
-	}
-	if len(allow) == 0 {
 		return nil
 	}
+	allow, err := p.fetchSubnetIDsByVPCRef(vpcID)
+	if err != nil || len(allow) == 0 {
+		return nil
+	}
+
 	var out []map[string]any
 	for _, vm := range vms {
 		if p.vmHasSubnet(vm, allow) {
