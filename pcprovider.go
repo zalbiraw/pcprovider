@@ -263,9 +263,7 @@ type Provider struct {
 	username    string
 	password    string
 	categoryKey string
-
-	// vpcName is a placeholder for future VPC-based filtering.
-	vpcName string
+	vpcName     string
 
 	cancel func()
 }
@@ -436,6 +434,7 @@ func (p *Provider) fetchServiceGroups(key string) (map[string][]serverTarget, er
 	if len(items) == 0 {
 		items = extractArray(payload, "data")
 	}
+
 	// Normalize items into []map[string]any representing VMs.
 	vms := make([]map[string]any, 0, len(items))
 	for _, it := range items {
@@ -651,7 +650,6 @@ func (p *Provider) vmHasSubnet(vm map[string]any, allow map[string]struct{}) boo
 		return false
 	}
 	matched := false
-	var seen []string
 	for _, n := range nicsAny {
 		nic, ok := n.(map[string]any)
 		if !ok {
@@ -662,7 +660,6 @@ func (p *Provider) vmHasSubnet(vm map[string]any, allow map[string]struct{}) boo
 			if netInfo, ok := nic[netKey].(map[string]any); ok {
 				if subnetRef, ok := netInfo["subnet"].(map[string]any); ok {
 					if id, _ := subnetRef["extId"].(string); id != "" {
-						seen = append(seen, id)
 						if _, ok := allow[id]; ok {
 							matched = true
 						}
@@ -673,7 +670,6 @@ func (p *Provider) vmHasSubnet(vm map[string]any, allow map[string]struct{}) boo
 		// Occasionally subnet may be top-level under NIC
 		if subnetRef, ok := nic["subnet"].(map[string]any); ok {
 			if id, _ := subnetRef["extId"].(string); id != "" {
-				seen = append(seen, id)
 				if _, ok := allow[id]; ok {
 					matched = true
 				}
